@@ -1,0 +1,16 @@
+{
+  "customerId": "cust-9001",
+  "items": [
+    {
+      "productId": "prod-100",
+      "quantity": 2,
+      "unitPrice": 1250
+    },
+    {
+      "productId": "prod-200",
+      "quantity": 1,
+      "unitPrice": 4500
+    }
+  ],
+  "currency": "LKR"
+}

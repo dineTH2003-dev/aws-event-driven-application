@@ -1,0 +1,8 @@
+aws_region                     = "ap-south-1"
+aws_profile                    = "account2"
+environment                    = "dev"
+project_name                   = "orders-eda"
+sqs_visibility_timeout_seconds = 180
+sqs_max_receive_count          = 3
+lambda_timeout_seconds         = 30
+log_retention_in_days          = 7
