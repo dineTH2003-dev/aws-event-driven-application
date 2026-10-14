@@ -45,7 +45,10 @@ export class IdempotencyManager {
 
       return { isNew: true, completed: false };
     } catch (error) {
-      if (error.name === "ConditionalCheckFailedException" || error.code === "ConditionalCheckFailedException") {
+      if (
+        error.name === "ConditionalCheckFailedException" ||
+        error.code === "ConditionalCheckFailedException"
+      ) {
         // Record already exists. Fetch it to inspect state
         const existing = await this.docClient.get({
           TableName: this.tableName,

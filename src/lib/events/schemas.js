@@ -35,7 +35,11 @@ export function validateOrderInput(payload) {
     if (!item.productId || typeof item.productId !== "string") {
       throw new ValidationError(`Item at index ${i} is missing valid 'productId'`);
     }
-    if (typeof item.quantity !== "number" || !Number.isInteger(item.quantity) || item.quantity <= 0) {
+    if (
+      typeof item.quantity !== "number" ||
+      !Number.isInteger(item.quantity) ||
+      item.quantity <= 0
+    ) {
       throw new ValidationError(`Item at index ${i} must have integer 'quantity' >= 1`);
     }
     if (typeof item.unitPrice !== "number" || item.unitPrice < 0) {
@@ -44,7 +48,9 @@ export function validateOrderInput(payload) {
   }
 
   if (!currency || typeof currency !== "string" || currency.length < 3) {
-    throw new ValidationError("Field 'currency' is required and must be a valid 3-letter currency code (e.g. LKR, USD)");
+    throw new ValidationError(
+      "Field 'currency' is required and must be a valid 3-letter currency code (e.g. LKR, USD)"
+    );
   }
 
   return true;
@@ -67,7 +73,9 @@ export function validateCloudEvent(event) {
   }
 
   if (event.datacontenttype !== "application/json") {
-    throw new ValidationError(`Unsupported datacontenttype '${event.datacontenttype}'. Expected 'application/json'`);
+    throw new ValidationError(
+      `Unsupported datacontenttype '${event.datacontenttype}'. Expected 'application/json'`
+    );
   }
 
   return true;

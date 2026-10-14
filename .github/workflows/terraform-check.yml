@@ -19,12 +19,21 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.6.0
+          terraform_wrapper: false
 
       - name: Terraform Format Check
         run: terraform -chdir=infrastructure/terraform fmt -check -recursive
 
       - name: Terraform Init
         run: terraform -chdir=infrastructure/terraform init -backend=false
+        env:
+          AWS_DEFAULT_REGION: ap-south-1
+          AWS_ACCESS_KEY_ID: mock-access-key
+          AWS_SECRET_ACCESS_KEY: mock-secret-key
 
       - name: Terraform Validate
         run: terraform -chdir=infrastructure/terraform validate
+        env:
+          AWS_DEFAULT_REGION: ap-south-1
+          AWS_ACCESS_KEY_ID: mock-access-key
+          AWS_SECRET_ACCESS_KEY: mock-secret-key

@@ -66,9 +66,7 @@ export async function handler(event) {
     // Route 2: GET /orders/{orderId} (Query Order)
     if (httpMethod === "GET") {
       const orderId =
-        event.pathParameters?.orderId ||
-        event.pathParameters?.id ||
-        path?.split("/").pop();
+        event.pathParameters?.orderId || event.pathParameters?.id || path?.split("/").pop();
 
       if (!orderId || orderId === "orders") {
         return formatResponse(400, {

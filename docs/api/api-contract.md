@@ -1,6 +1,7 @@
 # 📡 API Contract Specification
 
 ## Base URL
+
 `https://{apiId}.execute-api.{region}.amazonaws.com/dev`
 
 ---
@@ -14,12 +15,14 @@ Submits a new order for asynchronous event-driven processing.
 - **Content-Type**: `application/json`
 
 ### Request Headers
-| Header | Type | Required | Description |
-| :--- | :--- | :---: | :--- |
-| `Content-Type` | String | Yes | Must be `application/json` |
-| `x-correlation-id` | String | No | Distributed tracing ID. If omitted, the API generates one. |
+
+| Header             | Type   | Required | Description                                                |
+| :----------------- | :----- | :------: | :--------------------------------------------------------- |
+| `Content-Type`     | String |   Yes    | Must be `application/json`                                 |
+| `x-correlation-id` | String |    No    | Distributed tracing ID. If omitted, the API generates one. |
 
 ### Request Body
+
 ```json
 {
   "customerId": "cust-5001",
@@ -40,6 +43,7 @@ Submits a new order for asynchronous event-driven processing.
 ```
 
 ### Validation Rules
+
 - `customerId`: Required, non-empty string.
 - `items`: Required, array with at least 1 item and maximum 50 items.
 - `items[].productId`: Required, non-empty string.
@@ -50,6 +54,7 @@ Submits a new order for asynchronous event-driven processing.
 ### Responses
 
 #### `202 Accepted`
+
 Returned when the order is successfully validated, persisted as `PENDING`, and enqueued via SNS.
 
 ```json
@@ -62,6 +67,7 @@ Returned when the order is successfully validated, persisted as `PENDING`, and e
 ```
 
 #### `400 Bad Request`
+
 Returned when payload fails validation rules.
 
 ```json
@@ -73,6 +79,7 @@ Returned when payload fails validation rules.
 ```
 
 #### `429 Too Many Requests`
+
 Returned when client exceeds API Gateway throttling limits (100 burst / 50 steady RPS).
 
 ```json
@@ -93,6 +100,7 @@ Retrieves the current state and details of an order from DynamoDB.
 ### Responses
 
 #### `200 OK`
+
 ```json
 {
   "orderId": "ord-7f93a210-67c2-4a0b-8d5f-4d436a5b6c01",
@@ -118,6 +126,7 @@ Retrieves the current state and details of an order from DynamoDB.
 ```
 
 #### `404 Not Found`
+
 ```json
 {
   "error": "NOT_FOUND",
@@ -130,6 +139,7 @@ Retrieves the current state and details of an order from DynamoDB.
 ## 3. Sample cURL Invocations
 
 ### Submit Order
+
 ```bash
 curl -X POST https://xyz.execute-api.ap-south-1.amazonaws.com/dev/orders \
   -H "Content-Type: application/json" \
@@ -143,6 +153,7 @@ curl -X POST https://xyz.execute-api.ap-south-1.amazonaws.com/dev/orders \
 ```
 
 ### Query Order Status
+
 ```bash
 curl -X GET https://xyz.execute-api.ap-south-1.amazonaws.com/dev/orders/ord-7f93a210-67c2-4a0b-8d5f-4d436a5b6c01
 ```

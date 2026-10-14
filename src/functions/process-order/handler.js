@@ -17,12 +17,10 @@ const tableName = process.env.ORDERS_TABLE_NAME || "orders-dev";
 const topicArn = process.env.ORDER_EVENTS_TOPIC_ARN || "";
 
 const idempotencyManager = new IdempotencyManager(docClient, tableName, 86400);
-const fulfillmentService = new OrderFulfillmentService(
-  docClient,
-  snsClient,
-  idempotencyManager,
-  { tableName, topicArn }
-);
+const fulfillmentService = new OrderFulfillmentService(docClient, snsClient, idempotencyManager, {
+  tableName,
+  topicArn
+});
 
 export async function handler(event) {
   const records = event.Records || [];
@@ -38,9 +36,13 @@ export async function handler(event) {
       try {
         cloudEvent = JSON.parse(record.body);
       } catch {
-        logger.error("Failed to parse SQS message body as JSON. Marking batch item failure.", null, {
-          messageId
-        });
+        logger.error(
+          "Failed to parse SQS message body as JSON. Marking batch item failure.",
+          null,
+          {
+            messageId
+          }
+        );
         batchItemFailures.push({ itemIdentifier: messageId });
         continue;
       }

@@ -7,7 +7,7 @@ variable "aws_region" {
 variable "aws_profile" {
   description = "AWS CLI profile name for deployment"
   type        = string
-  default     = "account2"
+  default     = null
 }
 
 variable "environment" {

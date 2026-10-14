@@ -53,11 +53,15 @@ export class OrderFulfillmentService {
 
     // 2. Chaos / Poison-Pill Simulation Check
     if (data.testChaos === "TRIGGER_UNHANDLED_EXCEPTION" || data.simulateFailure === true) {
-      logger.error("Chaos test payload encountered. Intentionally throwing unhandled failure.", null, {
-        orderId,
-        eventId,
-        messageId
-      });
+      logger.error(
+        "Chaos test payload encountered. Intentionally throwing unhandled failure.",
+        null,
+        {
+          orderId,
+          eventId,
+          messageId
+        }
+      );
       throw new PoisonPillError("Chaos test triggered intentional failure for DLQ verification");
     }
 

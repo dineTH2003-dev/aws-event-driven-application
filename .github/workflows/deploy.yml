@@ -14,6 +14,7 @@ jobs:
     name: Deploy Infrastructure & Serverless Handlers
     runs-on: ubuntu-latest
     environment: dev
+    if: ${{ secrets.AWS_DEPLOY_ROLE_ARN != '' }}
 
     steps:
       - name: Checkout repository
@@ -35,6 +36,7 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.6.0
+          terraform_wrapper: false
 
       - name: Configure AWS Credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4

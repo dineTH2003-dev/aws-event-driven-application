@@ -1,5 +1,9 @@
 import { EventFactory } from "../../src/lib/events/event-factory.js";
-import { EVENT_TYPES, validateOrderInput, validateCloudEvent } from "../../src/lib/events/schemas.js";
+import {
+  EVENT_TYPES,
+  validateOrderInput,
+  validateCloudEvent
+} from "../../src/lib/events/schemas.js";
 import { ValidationError } from "../../src/lib/errors/app-error.js";
 
 describe("EventFactory & Schema Validation", () => {
@@ -7,9 +11,7 @@ describe("EventFactory & Schema Validation", () => {
     test("should accept a valid order payload", () => {
       const validPayload = {
         customerId: "cust-123",
-        items: [
-          { productId: "prod-1", quantity: 2, unitPrice: 500 }
-        ],
+        items: [{ productId: "prod-1", quantity: 2, unitPrice: 500 }],
         currency: "LKR"
       };
 
@@ -17,33 +19,60 @@ describe("EventFactory & Schema Validation", () => {
     });
 
     test("should reject missing or empty customerId", () => {
-      expect(() => validateOrderInput({ customerId: "", items: [{ productId: "p", quantity: 1, unitPrice: 10 }], currency: "USD" }))
-        .toThrow(ValidationError);
-      expect(() => validateOrderInput({ items: [{ productId: "p", quantity: 1, unitPrice: 10 }], currency: "USD" }))
-        .toThrow("Field 'customerId' is required");
+      expect(() =>
+        validateOrderInput({
+          customerId: "",
+          items: [{ productId: "p", quantity: 1, unitPrice: 10 }],
+          currency: "USD"
+        })
+      ).toThrow(ValidationError);
+      expect(() =>
+        validateOrderInput({
+          items: [{ productId: "p", quantity: 1, unitPrice: 10 }],
+          currency: "USD"
+        })
+      ).toThrow("Field 'customerId' is required");
     });
 
     test("should reject empty items array", () => {
-      expect(() => validateOrderInput({ customerId: "cust-1", items: [], currency: "USD" }))
-        .toThrow("Field 'items' is required and must be a non-empty array");
+      expect(() =>
+        validateOrderInput({ customerId: "cust-1", items: [], currency: "USD" })
+      ).toThrow("Field 'items' is required and must be a non-empty array");
     });
 
     test("should reject items with negative or non-integer quantity", () => {
-      expect(() => validateOrderInput({ customerId: "cust-1", items: [{ productId: "p", quantity: -1, unitPrice: 10 }], currency: "USD" }))
-        .toThrow("must have integer 'quantity' >= 1");
-      expect(() => validateOrderInput({ customerId: "cust-1", items: [{ productId: "p", quantity: 1.5, unitPrice: 10 }], currency: "USD" }))
-        .toThrow("must have integer 'quantity' >= 1");
+      expect(() =>
+        validateOrderInput({
+          customerId: "cust-1",
+          items: [{ productId: "p", quantity: -1, unitPrice: 10 }],
+          currency: "USD"
+        })
+      ).toThrow("must have integer 'quantity' >= 1");
+      expect(() =>
+        validateOrderInput({
+          customerId: "cust-1",
+          items: [{ productId: "p", quantity: 1.5, unitPrice: 10 }],
+          currency: "USD"
+        })
+      ).toThrow("must have integer 'quantity' >= 1");
     });
 
     test("should reject invalid currency", () => {
-      expect(() => validateOrderInput({ customerId: "cust-1", items: [{ productId: "p", quantity: 1, unitPrice: 10 }], currency: "US" }))
-        .toThrow("Field 'currency' is required");
+      expect(() =>
+        validateOrderInput({
+          customerId: "cust-1",
+          items: [{ productId: "p", quantity: 1, unitPrice: 10 }],
+          currency: "US"
+        })
+      ).toThrow("Field 'currency' is required");
     });
   });
 
   describe("EventFactory CloudEvent Construction", () => {
     test("should create a valid CloudEvents 1.0 envelope", () => {
-      const event = EventFactory.createEvent("orders-api", EVENT_TYPES.ORDER_CREATED, { foo: "bar" });
+      const event = EventFactory.createEvent("orders-api", EVENT_TYPES.ORDER_CREATED, {
+        foo: "bar"
+      });
 
       expect(event.specversion).toBe("1.0");
       expect(event.id).toMatch(/^evt-/);

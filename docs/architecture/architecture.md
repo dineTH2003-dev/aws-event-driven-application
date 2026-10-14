@@ -1,11 +1,13 @@
 # 🏛️ Architecture Specification
 
 ## 1. Overview
+
 The **AWS Event-Driven Order Processing Platform** is an enterprise-oriented serverless application designed to process high-volume order transactions asynchronously. It replaces traditional synchronous request-response chains with a decoupled, message-buffered event-driven architecture.
 
 ## 2. Component Breakdown
 
 ### 2.1 Ingestion Tier
+
 - **Amazon API Gateway (REST API)**:
   - Exposes `POST /orders` (order creation) and `GET /orders/{orderId}` (order query).
   - Validates request payload schemas before invoking compute.
@@ -18,6 +20,7 @@ The **AWS Event-Driven Order Processing Platform** is an enterprise-oriented ser
   - Publishes event to Amazon SNS Topic.
 
 ### 2.2 Messaging & Decoupling Tier
+
 - **Amazon SNS Topic (`order-events-topic`)**:
   - Acts as a centralized event broker / publisher.
   - Implements fan-out distribution to multiple subscribers.
@@ -37,6 +40,7 @@ The **AWS Event-Driven Order Processing Platform** is an enterprise-oriented ser
   - CloudWatch Alarm configured on `ApproximateNumberOfMessagesVisible > 0`.
 
 ### 2.3 Compute & Fulfillment Tier
+
 - **Lambda Function (`process-order`)**:
   - Triggered via SQS Event Source Mapping with `batch_size = 10` and `maximum_batching_window_in_seconds = 5`.
   - Enables `ReportBatchItemFailures` so that if 1 message in a batch of 10 fails, only that specific message is retried, avoiding redundant re-execution of the 9 successful ones.
@@ -50,6 +54,7 @@ The **AWS Event-Driven Order Processing Platform** is an enterprise-oriented ser
   - Simulates sending customer confirmation emails or push notifications.
 
 ### 2.4 Persistence Tier
+
 - **Amazon DynamoDB (`orders` table)**:
   - Single-table design storing both order lifecycle records and idempotency locks.
   - Billing mode: `PAY_PER_REQUEST` (On-Demand auto-scaling).
@@ -57,6 +62,7 @@ The **AWS Event-Driven Order Processing Platform** is an enterprise-oriented ser
   - Time to Live (TTL) enabled on `ttl` attribute for automated cleanup of transient idempotency records after 24 hours.
 
 ## 3. Resilience & Failure Taxonomy
+
 1. **Transient Errors** (e.g. temporary network timeouts, DynamoDB throttling):
    - Handled via SQS redrive. The message remains unacknowledged, visibility timeout expires, and SQS delivers it again up to 3 times.
 2. **Terminal Business Errors** (e.g. insufficient inventory, expired promotion):

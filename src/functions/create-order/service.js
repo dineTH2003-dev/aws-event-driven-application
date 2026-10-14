@@ -94,7 +94,7 @@ export class OrderService {
       throw new NotFoundError(`Order ${orderId} not found`);
     }
 
-    const { PK, SK, ttl, ...order } = result.Item;
+    const { PK: _PK, SK: _SK, ttl: _ttl, ...order } = result.Item;
     return order;
   }
 }

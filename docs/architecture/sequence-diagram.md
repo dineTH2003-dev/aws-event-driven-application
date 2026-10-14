@@ -53,11 +53,11 @@ sequenceDiagram
     SQS->>WorkerLambda: Deliver message (ReceiveCount = 1)
     Note over WorkerLambda: Unhandled exception / corrupt payload
     WorkerLambda-->>SQS: Return batchItemFailure (Message not deleted)
-    
+
     Note over SQS: Visibility Timeout expires (180s)
     SQS->>WorkerLambda: Re-deliver message (ReceiveCount = 2)
     WorkerLambda-->>SQS: Return batchItemFailure
-    
+
     Note over SQS: Visibility Timeout expires (180s)
     SQS->>WorkerLambda: Re-deliver message (ReceiveCount = 3)
     WorkerLambda-->>SQS: Return batchItemFailure
@@ -66,7 +66,7 @@ sequenceDiagram
     SQS->>DLQ: Automatically route message to Dead-Letter Queue
     DLQ->>CWAlarm: ApproximateNumberOfMessagesVisible > 0 triggers alarm
     CWAlarm->>SRE: Operational alert dispatched
-    
+
     Note over SRE: SRE inspects DLQ message, fixes root cause
     SRE->>SQS: Execute redrive script (re-inject into main queue)
 ```
