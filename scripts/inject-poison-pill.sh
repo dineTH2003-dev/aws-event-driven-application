@@ -4,9 +4,10 @@ set -euo pipefail
 
 AWS_PROFILE="${AWS_PROFILE:-account2}"
 AWS_REGION="${AWS_REGION:-ap-south-1}"
+QUEUE_NAME="${QUEUE_NAME:-orders-eda-dev-order-processing-queue}"
 
-echo "☠️ Injecting poison-pill message directly into SQS queue..."
-QUEUE_URL=$(aws sqs get-queue-url --queue-name order-processing-queue --profile "$AWS_PROFILE" --region "$AWS_REGION" --query "QueueUrl" --output text)
+echo "☠️ Injecting poison-pill message directly into SQS queue: $QUEUE_NAME..."
+QUEUE_URL=$(aws sqs get-queue-url --queue-name "$QUEUE_NAME" --profile "$AWS_PROFILE" --region "$AWS_REGION" --query "QueueUrl" --output text)
 
 POISON_PAYLOAD='{
   "specversion": "1.0",
@@ -29,4 +30,4 @@ aws sqs send-message \
   --region "$AWS_REGION"
 
 echo "✅ Poison-pill message enqueued to $QUEUE_URL."
-echo "Inspect CloudWatch Alarms and DLQ after 3 failed attempts (approx 5-10 minutes)."
+echo "The worker will retry 3 times before diverting message to Dead-Letter Queue (DLQ)."

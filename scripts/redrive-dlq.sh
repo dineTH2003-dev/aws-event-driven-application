@@ -4,11 +4,13 @@ set -euo pipefail
 
 AWS_PROFILE="${AWS_PROFILE:-account2}"
 AWS_REGION="${AWS_REGION:-ap-south-1}"
+DLQ_NAME="${DLQ_NAME:-orders-eda-dev-order-processing-dlq}"
+MAIN_QUEUE_NAME="${MAIN_QUEUE_NAME:-orders-eda-dev-order-processing-queue}"
 
-echo "🔄 Starting SQS DLQ Redrive task..."
+echo "🔄 Starting SQS DLQ Redrive task from $DLQ_NAME to $MAIN_QUEUE_NAME..."
 
 DLQ_ARN=$(aws sqs get-queue-attributes \
-  --queue-url "$(aws sqs get-queue-url --queue-name order-processing-dlq --profile "$AWS_PROFILE" --region "$AWS_REGION" --query 'QueueUrl' --output text)" \
+  --queue-url "$(aws sqs get-queue-url --queue-name "$DLQ_NAME" --profile "$AWS_PROFILE" --region "$AWS_REGION" --query 'QueueUrl' --output text)" \
   --attribute-names QueueArn \
   --profile "$AWS_PROFILE" \
   --region "$AWS_REGION" \
@@ -16,7 +18,7 @@ DLQ_ARN=$(aws sqs get-queue-attributes \
   --output text)
 
 MAIN_QUEUE_ARN=$(aws sqs get-queue-attributes \
-  --queue-url "$(aws sqs get-queue-url --queue-name order-processing-queue --profile "$AWS_PROFILE" --region "$AWS_REGION" --query 'QueueUrl' --output text)" \
+  --queue-url "$(aws sqs get-queue-url --queue-name "$MAIN_QUEUE_NAME" --profile "$AWS_PROFILE" --region "$AWS_REGION" --query 'QueueUrl' --output text)" \
   --attribute-names QueueArn \
   --profile "$AWS_PROFILE" \
   --region "$AWS_REGION" \
