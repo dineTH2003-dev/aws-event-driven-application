@@ -10,6 +10,9 @@ jobs:
   terraform-validate:
     name: Terraform Format & Validate
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infrastructure/terraform
 
     steps:
       - name: Checkout repository
@@ -22,18 +25,13 @@ jobs:
           terraform_wrapper: false
 
       - name: Terraform Format Check
-        run: terraform -chdir=infrastructure/terraform fmt -check -recursive
+        run: terraform fmt -check -recursive
 
       - name: Terraform Init
-        run: terraform -chdir=infrastructure/terraform init -backend=false
-        env:
-          AWS_DEFAULT_REGION: ap-south-1
-          AWS_ACCESS_KEY_ID: mock-access-key
-          AWS_SECRET_ACCESS_KEY: mock-secret-key
+        run: terraform init -backend=false
 
       - name: Terraform Validate
-        run: terraform -chdir=infrastructure/terraform validate
+        run: terraform validate
         env:
           AWS_DEFAULT_REGION: ap-south-1
-          AWS_ACCESS_KEY_ID: mock-access-key
-          AWS_SECRET_ACCESS_KEY: mock-secret-key
+          AWS_REGION: ap-south-1

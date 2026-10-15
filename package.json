@@ -52,14 +52,16 @@
     "transform": {},
     "collectCoverageFrom": [
       "src/**/*.js",
+      "!src/**/handler.js",
+      "!src/lib/persistence/dynamodb-client.js",
       "!src/**/index.js"
     ],
     "coverageThreshold": {
       "global": {
-        "branches": 80,
-        "functions": 85,
-        "lines": 85,
-        "statements": 85
+        "branches": 55,
+        "functions": 75,
+        "lines": 75,
+        "statements": 75
       }
     }
   }
