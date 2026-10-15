@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AWS Event-Driven Order Processing Platform</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    .pulse-glow {
+      box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
+    }
+    .node-active {
+      border-color: #3b82f6 !important;
+      background-color: rgba(59, 130, 246, 0.1) !important;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen antialiased p-4 md:p-8 font-sans">
+  <div class="max-w-6xl mx-auto space-y-8">
+    
+    <!-- Header -->
+    <header class="border-b border-slate-800 pb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-3">
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+            ● Live on AWS (ap-south-1)
+          </span>
+          <span class="text-xs text-slate-500">API Gateway • SNS • SQS • Lambda • DynamoDB</span>
+        </div>
+        <h1 class="text-2xl md:text-3xl font-bold tracking-tight text-white mt-1">
+          Serverless Event-Driven Order Platform
+        </h1>
+        <p class="text-sm text-slate-400 mt-1">
+          Asynchronous, decoupled order ingestion with SNS fan-out, SQS rate-limiting, DLQ fault tolerance & DynamoDB idempotency.
+        </p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <a href="https://github.com/dineTH2003-dev/aws-event-driven-application" target="_blank" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
+          GitHub Repo ↗
+        </a>
+      </div>
+    </header>
+
+    <!-- Architecture Interactive Visualizer -->
+    <section class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl backdrop-blur">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4">
+        <div>
+          <h2 class="text-lg font-semibold text-white">Interactive Architecture Pipeline</h2>
+          <p class="text-xs text-slate-400">Click any stage below to inspect how it functions in real time.</p>
+        </div>
+        <div class="text-xs bg-slate-800 px-3 py-1 rounded-md text-amber-300 font-mono" id="pipeline-status-badge">
+          System Idle • Ready for Orders
+        </div>
+      </div>
+
+      <!-- Flow Nodes -->
+      <div class="grid grid-cols-2 md:grid-cols-6 gap-3 my-6 text-center text-xs">
+        
+        <!-- Node 1 -->
+        <div id="node-client" onclick="showStageDetails('client')" class="cursor-pointer border border-slate-800 hover:border-slate-700 bg-slate-950 p-3 rounded-xl transition flex flex-col items-center justify-between gap-2">
+          <div class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center font-bold">1</div>
+          <div>
+            <div class="font-semibold text-slate-200">Client / Browser</div>
+            <div class="text-[10px] text-slate-500">POST /orders</div>
+          </div>
+          <span class="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">HTTP REST</span>
+        </div>
+
+        <!-- Node 2 -->
+        <div id="node-apigw" onclick="showStageDetails('apigw')" class="cursor-pointer border border-slate-800 hover:border-slate-700 bg-slate-950 p-3 rounded-xl transition flex flex-col items-center justify-between gap-2">
+          <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center font-bold">2</div>
+          <div>
+            <div class="font-semibold text-slate-200">API Gateway</div>
+            <div class="text-[10px] text-slate-500">Validation & Route</div>
+          </div>
+          <span class="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400">202 Accepted</span>
+        </div>
+
+        <!-- Node 3 -->
+        <div id="node-ingest" onclick="showStageDetails('ingest')" class="cursor-pointer border border-slate-800 hover:border-slate-700 bg-slate-950 p-3 rounded-xl transition flex flex-col items-center justify-between gap-2">
+          <div class="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center font-bold">3</div>
+          <div>
+            <div class="font-semibold text-slate-200">Ingestion Lambda</div>
+            <div class="text-[10px] text-slate-500">Envelope CloudEvent</div>
+          </div>
+          <span class="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400">Fast Ack</span>
+        </div>
+
+        <!-- Node 4 -->
+        <div id="node-sns" onclick="showStageDetails('sns')" class="cursor-pointer border border-slate-800 hover:border-slate-700 bg-slate-950 p-3 rounded-xl transition flex flex-col items-center justify-between gap-2">
+          <div class="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center font-bold">4</div>
+          <div>
+            <div class="font-semibold text-slate-200">Amazon SNS</div>
+            <div class="text-[10px] text-slate-500">Order Events Topic</div>
+          </div>
+          <span class="text-[9px] px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-400">Fan-Out Broadcast</span>
+        </div>
+
+        <!-- Node 5 -->
+        <div id="node-sqs" onclick="showStageDetails('sqs')" class="cursor-pointer border border-slate-800 hover:border-slate-700 bg-slate-950 p-3 rounded-xl transition flex flex-col items-center justify-between gap-2">
+          <div class="w-8 h-8 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center font-bold">5</div>
+          <div>
+            <div class="font-semibold text-slate-200">Amazon SQS</div>
+            <div class="text-[10px] text-slate-500">Buffer + DLQ</div>
+          </div>
+          <span class="text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400">Rate-Limiting</span>
+        </div>
+
+        <!-- Node 6 -->
+        <div id="node-worker" onclick="showStageDetails('worker')" class="cursor-pointer border border-slate-800 hover:border-slate-700 bg-slate-950 p-3 rounded-xl transition flex flex-col items-center justify-between gap-2">
+          <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold">6</div>
+          <div>
+            <div class="font-semibold text-slate-200">Worker & DynamoDB</div>
+            <div class="text-[10px] text-slate-500">Idempotent Commit</div>
+          </div>
+          <span class="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400">COMPLETED</span>
+        </div>
+
+      </div>
+
+      <!-- Detail Box for clicked node -->
+      <div id="stage-detail-box" class="bg-slate-950/70 border border-slate-800 rounded-xl p-4 text-sm text-slate-300">
+        <div class="font-semibold text-white flex items-center gap-2">
+          <span class="inline-block w-2 h-2 rounded-full bg-blue-400"></span>
+          <span id="detail-title">Stage 1: Client / Web Browser</span>
+        </div>
+        <p id="detail-desc" class="text-xs text-slate-400 mt-1 leading-relaxed">
+          The user initiates a purchase. The frontend sends an HTTP POST request to API Gateway with a structured order payload. The client does NOT wait for inventory reservation, payment authorization, or warehouse notifications; it immediately gets a 202 Accepted and continues browsing.
+        </p>
+      </div>
+    </section>
+
+    <!-- Main Interactive Grid: Place Order & Track Status -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      
+      <!-- Order Creation Form -->
+      <section class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+              <span>🛒</span> Place Live Real Order
+            </h2>
+            <span class="text-xs font-mono bg-blue-500/10 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded">
+              POST /orders
+            </span>
+          </div>
+          <p class="text-xs text-slate-400 mb-6">
+            Submits a real payload to your live AWS API Gateway in Mumbai (<code>ap-south-1</code>).
+          </p>
+
+          <form id="order-form" onsubmit="handlePlaceOrder(event)" class="space-y-4">
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Customer Identifier</label>
+              <input type="text" id="customerId" value="dineth-vip-customer" required
+                class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">Select Product</label>
+                <select id="productId" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+                  <option value="mechanical-keyboard" data-price="18500">Mechanical Keyboard (18,500)</option>
+                  <option value="gaming-mouse" data-price="4500">Wireless Gaming Mouse (4,500)</option>
+                  <option value="4k-monitor" data-price="95000">Ultra-Wide 4K Monitor (95,000)</option>
+                  <option value="noise-cancelling-headphones" data-price="32000">ANC Headphones (32,000)</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">Quantity</label>
+                <input type="number" id="quantity" value="1" min="1" max="10" required
+                  class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">Currency</label>
+                <select id="currency" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+                  <option value="LKR">LKR (Sri Lankan Rupee)</option>
+                  <option value="USD">USD (US Dollar)</option>
+                  <option value="EUR">EUR (Euro)</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">Correlation ID Header</label>
+                <input type="text" id="correlationId" value="corr-test-web-ui"
+                  class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-400 font-mono text-xs focus:outline-none focus:border-blue-500">
+              </div>
+            </div>
+
+            <div class="pt-2">
+              <button type="submit" id="submit-btn"
+                class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 px-4 rounded-xl text-sm transition flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20">
+                <span>⚡ Send Order to AWS</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Ingestion API Response Box -->
+        <div id="ingestion-result" class="mt-6 hidden">
+          <div class="text-xs font-semibold text-slate-300 mb-1 flex items-center justify-between">
+            <span>Instant API Gateway Response:</span>
+            <span class="text-emerald-400 font-mono">202 Accepted</span>
+          </div>
+          <pre id="ingestion-json" class="bg-slate-950 border border-slate-800 rounded-lg p-3 text-[11px] font-mono text-emerald-300 overflow-x-auto"></pre>
+        </div>
+      </section>
+
+      <!-- Real-Time Order Status Tracker -->
+      <section class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+              <span>🔍</span> Real-Time Order Tracker
+            </h2>
+            <span class="text-xs font-mono bg-purple-500/10 text-purple-400 border border-purple-500/30 px-2 py-0.5 rounded">
+              GET /orders/{id}
+            </span>
+          </div>
+          <p class="text-xs text-slate-400 mb-6">
+            Polls DynamoDB to verify asynchronous event completion by the background worker.
+          </p>
+
+          <div class="flex gap-2 mb-4">
+            <input type="text" id="track-order-id" placeholder="Paste orderId (e.g. ord-d41ac864...)"
+              value="ord-d41ac864-c2da-4b1e-8517-cbf342a94be6"
+              class="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 font-mono text-xs focus:outline-none focus:border-purple-500">
+            <button onclick="checkOrderStatus()" id="track-btn"
+              class="bg-purple-600 hover:bg-purple-500 text-white font-medium px-4 py-2 rounded-lg text-sm transition flex items-center gap-1.5">
+              <span>Check Status</span>
+            </button>
+          </div>
+
+          <!-- Status Card -->
+          <div id="status-card" class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-900 pb-2">
+              <span class="text-xs text-slate-400">DynamoDB Order Status:</span>
+              <span id="badge-status" class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                COMPLETED
+              </span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <span class="text-slate-500 block">Total Amount:</span>
+                <span id="field-amount" class="font-semibold text-slate-200">1,999 LKR</span>
+              </div>
+              <div>
+                <span class="text-slate-500 block">Customer:</span>
+                <span id="field-customer" class="font-semibold text-slate-200">cust-smoke-1</span>
+              </div>
+              <div>
+                <span class="text-slate-500 block">Created At:</span>
+                <span id="field-created" class="text-slate-400 font-mono text-[10px]">2026-10-14 19:06:25 UTC</span>
+              </div>
+              <div>
+                <span class="text-slate-500 block">Fulfilled At:</span>
+                <span id="field-completed" class="text-slate-400 font-mono text-[10px]">2026-10-14 19:11:03 UTC</span>
+              </div>
+            </div>
+
+            <!-- Items table -->
+            <div class="border-t border-slate-900 pt-2">
+              <span class="text-xs text-slate-400 block mb-1">Purchased Items:</span>
+              <div id="field-items" class="text-[11px] font-mono text-slate-300 space-y-1">
+                <div>• prod-smoke-1 (Qty: 1 @ 1,999)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-6 pt-4 border-t border-slate-800 flex items-center justify-between text-xs text-slate-500">
+          <span>Storage: Single-Table DynamoDB</span>
+          <span id="polling-indicator" class="hidden text-amber-400 animate-pulse">● Auto-polling status...</span>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- Educational Deep-Dive: A to Z SQS & SNS -->
+    <section class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 space-y-6">
+      <div class="border-b border-slate-800 pb-4">
+        <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+          <span>📚</span> A to Z Explanation: Why & How We Use SNS and SQS Together
+        </h2>
+        <p class="text-xs text-slate-400 mt-1">
+          Understanding the cloud architectural patterns that make enterprise serverless systems resilient to spikes and failure.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
+        
+        <!-- Card 1: SNS -->
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-2">
+          <div class="flex items-center gap-2 font-semibold text-rose-400 text-sm">
+            <span>📢</span> 1. Amazon SNS (Pub/Sub)
+          </div>
+          <p class="text-slate-300 leading-relaxed">
+            <strong>Role:</strong> Publisher / Subscriber broadcast hub.
+          </p>
+          <p class="text-slate-400 leading-relaxed">
+            When an order arrives, the ingestion service doesn't know (or care) who needs this event. It simply publishes a single <code>OrderCreated</code> CloudEvent to SNS.
+          </p>
+          <div class="bg-slate-900 p-2 rounded text-[11px] text-slate-300">
+            <strong>Fan-out benefit:</strong> Multiple queues (Order Processing, Analytics, Customer SMS Notifications, Fraud Detection) can subscribe independently without changing a single line of API code!
+          </div>
+        </div>
+
+        <!-- Card 2: SQS -->
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-2">
+          <div class="flex items-center gap-2 font-semibold text-cyan-400 text-sm">
+            <span>📥</span> 2. Amazon SQS (Buffering)
+          </div>
+          <p class="text-slate-300 leading-relaxed">
+            <strong>Role:</strong> Rate-limiting shock absorber & persistent queue.
+          </p>
+          <p class="text-slate-400 leading-relaxed">
+            If 10,000 customers place orders in 1 second during a flash sale, SNS pushes all messages into SQS. SQS safely buffers them.
+          </p>
+          <div class="bg-slate-900 p-2 rounded text-[11px] text-slate-300">
+            <strong>Backpressure benefit:</strong> Downstream databases and workers are never overwhelmed. Lambda pulls messages at a controlled rate (e.g., batches of 10), preventing DynamoDB throttling.
+          </div>
+        </div>
+
+        <!-- Card 3: DLQ & Idempotency -->
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-2">
+          <div class="flex items-center gap-2 font-semibold text-amber-400 text-sm">
+            <span>🛡️</span> 3. DLQ & Idempotency
+          </div>
+          <p class="text-slate-300 leading-relaxed">
+            <strong>Role:</strong> Zero data loss & duplicate prevention.
+          </p>
+          <p class="text-slate-400 leading-relaxed">
+            SQS guarantees <em>at-least-once delivery</em>. A network blip might re-deliver a message. The worker uses DynamoDB conditional writes to discard duplicate events safely.
+          </p>
+          <div class="bg-slate-900 p-2 rounded text-[11px] text-slate-300">
+            <strong>DLQ benefit:</strong> If a poison-pill payload fails 3 times (<code>maxReceiveCount = 3</code>), it is moved to the DLQ instead of blocking the entire queue forever.
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+  </div>
+
+  <script>
+    const API_BASE = "https://m6g7jfn4vh.execute-api.ap-south-1.amazonaws.com/dev/orders";
+    let pollInterval = null;
+
+    // Stage details content for interactive visualizer
+    const STAGES = {
+      client: {
+        title: "Stage 1: Client / Web Browser",
+        desc: "The client makes an HTTP POST request to API Gateway with the items and customer info. The client does NOT wait for inventory, billing, or warehouse workers. It immediately gets a 202 Accepted response in ~35ms."
+      },
+      apigw: {
+        title: "Stage 2: Amazon API Gateway",
+        desc: "Provides the managed HTTPS entrypoint, handles CORS, validates route paths (/orders), provides throttling/rate-limiting, and forwards the event to the Ingestion Lambda."
+      },
+      ingest: {
+        title: "Stage 3: Ingestion Lambda (create-order)",
+        desc: "Validates order schema (quantities, currency, customerId), creates a PENDING record in DynamoDB, wraps the payload in a standardized CloudEvents 1.0 envelope, and publishes to SNS."
+      },
+      sns: {
+        title: "Stage 4: Amazon SNS (Pub/Sub)",
+        desc: "The central event broadcast broker. Decouples the order producer from consumers. Allows multiple subscribers (Fulfillment Queue, Notification Queue, Audit Lake) to receive the event simultaneously."
+      },
+      sqs: {
+        title: "Stage 5: Amazon SQS (Queue & Dead-Letter Queue)",
+        desc: "Acts as a durable buffer. Absorbs sudden traffic surges (shock absorber). Employs a Dead-Letter Queue (DLQ) with maxReceiveCount=3 to isolate failing messages without blocking healthy orders."
+      },
+      worker: {
+        title: "Stage 6: Fulfillment Worker & DynamoDB",
+        desc: "The worker Lambda consumes batches using ReportBatchItemFailures. Checks DynamoDB idempotency to prevent duplicate charges, completes fulfillment, and updates the order status to COMPLETED."
+      }
+    };
+
+    function showStageDetails(stageKey) {
+      document.querySelectorAll('[id^="node-"]').forEach(el => el.classList.remove('node-active'));
+      const activeNode = document.getElementById('node-' + stageKey);
+      if (activeNode) activeNode.classList.add('node-active');
+
+      const data = STAGES[stageKey];
+      if (data) {
+        document.getElementById('detail-title').innerText = data.title;
+        document.getElementById('detail-desc').innerText = data.desc;
+      }
+    }
+
+    // Handle Order Submission
+    async function handlePlaceOrder(event) {
+      event.preventDefault();
+      const submitBtn = document.getElementById('submit-btn');
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = "<span>⏳ Submitting to AWS...</span>";
+
+      const selectProduct = document.getElementById('productId');
+      const unitPrice = Number(selectProduct.options[selectProduct.selectedIndex].dataset.price);
+
+      const payload = {
+        customerId: document.getElementById('customerId').value.trim(),
+        currency: document.getElementById('currency').value,
+        items: [
+          {
+            productId: selectProduct.value,
+            quantity: Number(document.getElementById('quantity').value),
+            unitPrice: unitPrice
+          }
+        ]
+      };
+
+      const correlationId = document.getElementById('correlationId').value.trim() || `corr-${Date.now()}`;
+
+      try {
+        // Flash visualizer nodes
+        flashPipeline();
+
+        const response = await fetch(API_BASE, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-correlation-id": correlationId
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+        
+        document.getElementById('ingestion-result').classList.remove('hidden');
+        document.getElementById('ingestion-json').innerText = JSON.stringify(data, null, 2);
+
+        if (data.orderId) {
+          document.getElementById('track-order-id').value = data.orderId;
+          document.getElementById('pipeline-status-badge').innerText = `Order Accepted: ${data.orderId}`;
+          // Start auto-polling tracker
+          startPolling(data.orderId);
+        }
+      } catch (err) {
+        alert("Failed to submit order: " + err.message);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = "<span>⚡ Send Order to AWS</span>";
+      }
+    }
+
+    // Flash pipeline nodes to visually represent event flight
+    function flashPipeline() {
+      const nodes = ['node-client', 'node-apigw', 'node-ingest', 'node-sns', 'node-sqs', 'node-worker'];
+      nodes.forEach((id, idx) => {
+        setTimeout(() => {
+          document.querySelectorAll('[id^="node-"]').forEach(el => el.classList.remove('pulse-glow'));
+          const el = document.getElementById(id);
+          if (el) el.classList.add('pulse-glow');
+        }, idx * 250);
+      });
+      setTimeout(() => {
+        document.querySelectorAll('[id^="node-"]').forEach(el => el.classList.remove('pulse-glow'));
+      }, nodes.length * 250 + 400);
+    }
+
+    // Poll Order Status
+    async function checkOrderStatus() {
+      const orderId = document.getElementById('track-order-id').value.trim();
+      if (!orderId) {
+        alert("Please enter a valid orderId");
+        return;
+      }
+
+      const trackBtn = document.getElementById('track-btn');
+      trackBtn.disabled = true;
+
+      try {
+        const res = await fetch(`${API_BASE}/${orderId}`);
+        if (!res.ok) {
+          throw new Error(`Order ${orderId} not found (HTTP ${res.status})`);
+        }
+        const order = await res.json();
+        renderOrderStatus(order);
+        return order.status;
+      } catch (err) {
+        document.getElementById('badge-status').className = "px-2.5 py-0.5 text-xs font-bold rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/30";
+        document.getElementById('badge-status').innerText = "NOT FOUND / ERROR";
+      } finally {
+        trackBtn.disabled = false;
+      }
+    }
+
+    function renderOrderStatus(order) {
+      const badge = document.getElementById('badge-status');
+      if (order.status === 'COMPLETED') {
+        badge.className = "px-2.5 py-0.5 text-xs font-bold rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30";
+        badge.innerText = "COMPLETED";
+      } else {
+        badge.className = "px-2.5 py-0.5 text-xs font-bold rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30";
+        badge.innerText = order.status || "PENDING";
+      }
+
+      document.getElementById('field-amount').innerText = `${(order.totalAmount || 0).toLocaleString()} ${order.currency || 'LKR'}`;
+      document.getElementById('field-customer').innerText = order.customerId || 'Unknown';
+      document.getElementById('field-created').innerText = order.createdAt ? new Date(order.createdAt).toLocaleTimeString() : 'N/A';
+      document.getElementById('field-completed').innerText = order.completedAt ? new Date(order.completedAt).toLocaleTimeString() : 'In Progress...';
+
+      const itemsContainer = document.getElementById('field-items');
+      if (order.items && order.items.length) {
+        itemsContainer.innerHTML = order.items.map(item => `
+          <div>• <span class="text-white">${item.productId}</span> (Qty: ${item.quantity} @ ${Number(item.unitPrice).toLocaleString()})</div>
+        `).join('');
+      } else {
+        itemsContainer.innerHTML = '<span class="text-slate-500">No items available</span>';
+      }
+    }
+
+    function startPolling(orderId) {
+      if (pollInterval) clearInterval(pollInterval);
+      const indicator = document.getElementById('polling-indicator');
+      indicator.classList.remove('hidden');
+
+      let attempts = 0;
+      pollInterval = setInterval(async () => {
+        attempts++;
+        const status = await checkOrderStatus();
+        if (status === 'COMPLETED' || attempts > 10) {
+          clearInterval(pollInterval);
+          indicator.classList.add('hidden');
+          document.getElementById('pipeline-status-badge').innerText = `Order Fulfilled: ${orderId}`;
+        }
+      }, 1500);
+    }
+  </script>
+</body>
+</html>

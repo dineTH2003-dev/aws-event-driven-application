@@ -45,3 +45,9 @@ variable "log_retention_in_days" {
   type        = number
   default     = 7
 }
+
+variable "notification_email" {
+  description = "Destination email address for order notifications and SRE incident alerts"
+  type        = string
+  default     = "dinethdilshan64@gmail.com"
+}

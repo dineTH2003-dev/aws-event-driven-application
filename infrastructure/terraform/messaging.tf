@@ -98,3 +98,11 @@ resource "aws_sns_topic_subscription" "notification_subscription" {
     type = ["com.example.orders.completed"]
   })
 }
+
+# 8. Real Email Notification Subscription (Order Events & Alerts)
+resource "aws_sns_topic_subscription" "user_email_subscription" {
+  count     = var.notification_email != null && var.notification_email != "" ? 1 : 0
+  topic_arn = aws_sns_topic.order_events.arn
+  protocol  = "email"
+  endpoint  = var.notification_email
+}

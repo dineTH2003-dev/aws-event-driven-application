@@ -12,6 +12,7 @@ resource "aws_cloudwatch_metric_alarm" "dlq_messages_present" {
   threshold           = 0
   alarm_description   = "Triggers when poison pills or permanently failing messages land in the Dead-Letter Queue"
   treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.order_events.arn]
 
   dimensions = {
     QueueName = aws_sqs_queue.order_processing_dlq.name
