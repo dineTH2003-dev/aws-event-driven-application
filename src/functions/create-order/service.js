@@ -19,7 +19,7 @@ export class OrderService {
   /**
    * Accepts and validates order payload, stores initial state, publishes OrderCreated event.
    */
-  async createOrder(payload, correlationId = null) {
+  async createOrder(payload, correlationId = null, traceId = null) {
     validateOrderInput(payload);
 
     const orderId = `ord-${crypto.randomUUID()}`;
@@ -52,21 +52,31 @@ export class OrderService {
     // 2. Build CloudEvents 1.0 envelope
     const cloudEvent = EventFactory.createOrderCreatedEvent(orderRecord, "orders-api");
 
-    // 3. Publish to SNS topic
+    // 3. Publish to SNS topic with trace propagation
+    const activeTraceId = traceId || process.env._X_AMZN_TRACE_ID;
+    const messageAttributes = {
+      type: {
+        DataType: "String",
+        StringValue: cloudEvent.type
+      },
+      correlationId: {
+        DataType: "String",
+        StringValue: correlationId || orderId
+      }
+    };
+
+    if (activeTraceId) {
+      messageAttributes.traceId = {
+        DataType: "String",
+        StringValue: activeTraceId
+      };
+    }
+
     await this.snsClient.send(
       new PublishCommand({
         TopicArn: this.topicArn,
         Message: JSON.stringify(cloudEvent),
-        MessageAttributes: {
-          type: {
-            DataType: "String",
-            StringValue: cloudEvent.type
-          },
-          correlationId: {
-            DataType: "String",
-            StringValue: correlationId || orderId
-          }
-        }
+        MessageAttributes: messageAttributes
       })
     );
 

@@ -57,8 +57,13 @@ export async function handler(event) {
         });
       }
 
-      const result = await orderService.createOrder(payload, correlationId);
-      logger.info("Order successfully accepted", { orderId: result.orderId });
+      const traceId =
+        event.headers?.["X-Amzn-Trace-Id"] ||
+        event.headers?.["x-amzn-trace-id"] ||
+        process.env._X_AMZN_TRACE_ID;
+
+      const result = await orderService.createOrder(payload, correlationId, traceId);
+      logger.info("Order successfully accepted", { orderId: result.orderId, traceId });
 
       return formatResponse(202, result);
     }

@@ -26,8 +26,11 @@ resource "aws_dynamodb_table" "orders" {
   }
 
   point_in_time_recovery {
-    enabled = false # Set to true in prod if needed to control costs
+    enabled = true
   }
+
+  stream_enabled   = true
+  stream_view_type = "NEW_AND_OLD_IMAGES"
 
   tags = local.common_tags
 }

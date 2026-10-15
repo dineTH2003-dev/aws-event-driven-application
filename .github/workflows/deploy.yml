@@ -27,10 +27,16 @@ jobs:
           cache: "npm"
 
       - name: Install dependencies
+        working-directory: .
         run: npm ci
 
       - name: Run unit tests
+        working-directory: .
         run: npm test
+
+      - name: Build Lambda bundles
+        working-directory: .
+        run: npm run build
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3

@@ -22,15 +22,17 @@ export class OrderFulfillmentService {
    * Processes a single CloudEvent record from SQS.
    * Guarantees idempotency and isolates transient vs poison-pill failures.
    */
-  async processEvent(cloudEvent, messageId) {
+  async processEvent(cloudEvent, messageId, context = {}) {
     const { id: eventId, data } = cloudEvent;
     const { orderId } = data || {};
+    const correlationId = context.correlationId || data?.correlationId || orderId;
+    const traceId = context.traceId || process.env._X_AMZN_TRACE_ID;
 
     if (!orderId) {
       throw new PoisonPillError("Malformed message: missing orderId in event data");
     }
 
-    logger.info("Processing order event", { eventId, orderId, messageId });
+    logger.info("Processing order event", { eventId, orderId, messageId, correlationId, traceId });
 
     // 1. Idempotency Check & Claim
     const claim = await this.idempotencyManager.claimProcessing(eventId, orderId);
@@ -38,7 +40,8 @@ export class OrderFulfillmentService {
     if (claim.completed) {
       logger.info("Duplicate event detected; already completed. Skipping side effects.", {
         eventId,
-        orderId
+        orderId,
+        correlationId
       });
       return { skipped: true, duplicate: true, result: claim.cachedResult };
     }
@@ -46,7 +49,8 @@ export class OrderFulfillmentService {
     if (claim.inProgress) {
       logger.warn("Event is currently being processed concurrently. Yielding execution.", {
         eventId,
-        orderId
+        orderId,
+        correlationId
       });
       return { skipped: true, inProgress: true };
     }
@@ -59,7 +63,8 @@ export class OrderFulfillmentService {
         {
           orderId,
           eventId,
-          messageId
+          messageId,
+          correlationId
         }
       );
       throw new PoisonPillError("Chaos test triggered intentional failure for DLQ verification");
@@ -92,20 +97,33 @@ export class OrderFulfillmentService {
     });
 
     if (this.topicArn) {
+      const messageAttributes = {
+        type: {
+          DataType: "String",
+          StringValue: outcomeEvent.type
+        },
+        orderId: {
+          DataType: "String",
+          StringValue: orderId
+        },
+        correlationId: {
+          DataType: "String",
+          StringValue: correlationId
+        }
+      };
+
+      if (traceId) {
+        messageAttributes.traceId = {
+          DataType: "String",
+          StringValue: traceId
+        };
+      }
+
       await this.snsClient.send(
         new PublishCommand({
           TopicArn: this.topicArn,
           Message: JSON.stringify(outcomeEvent),
-          MessageAttributes: {
-            type: {
-              DataType: "String",
-              StringValue: outcomeEvent.type
-            },
-            orderId: {
-              DataType: "String",
-              StringValue: orderId
-            }
-          }
+          MessageAttributes: messageAttributes
         })
       );
     }

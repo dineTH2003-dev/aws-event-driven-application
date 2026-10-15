@@ -1,8 +1,9 @@
 /**
  * Event Schemas and Validation Functions
- * Validates domain models and CloudEvents 1.0 specifications.
+ * Validates domain models and CloudEvents 1.0 specifications using Zod.
  */
 
+import { z } from "zod";
 import { ValidationError } from "../errors/app-error.js";
 
 export const EVENT_TYPES = {
@@ -11,46 +12,74 @@ export const EVENT_TYPES = {
   ORDER_FAILED: "com.example.orders.failed"
 };
 
+export const OrderItemSchema = z.object({
+  productId: z
+    .string({ message: "is missing valid 'productId'" })
+    .min(1, "is missing valid 'productId'"),
+  quantity: z
+    .number({ message: "must have integer 'quantity' >= 1" })
+    .int("must have integer 'quantity' >= 1")
+    .positive("must have integer 'quantity' >= 1"),
+  unitPrice: z
+    .number({ message: "must have numeric 'unitPrice' >= 0" })
+    .nonnegative("must have numeric 'unitPrice' >= 0")
+});
+
+export const OrderInputSchema = z.object({
+  customerId: z
+    .string({ message: "Field 'customerId' is required and must be a non-empty string" })
+    .min(1, "Field 'customerId' is required and must be a non-empty string"),
+  items: z
+    .array(OrderItemSchema, {
+      message: "Field 'items' is required and must be a non-empty array"
+    })
+    .nonempty("Field 'items' is required and must be a non-empty array")
+    .max(50, "Field 'items' exceeds maximum allowed limit of 50 items"),
+  currency: z
+    .string({
+      message:
+        "Field 'currency' is required and must be a valid 3-letter currency code (e.g. LKR, USD)"
+    })
+    .min(
+      3,
+      "Field 'currency' is required and must be a valid 3-letter currency code (e.g. LKR, USD)"
+    )
+});
+
+export const CloudEventSchema = z.object({
+  specversion: z.literal("1.0", {
+    errorMap: () => ({ message: "Unsupported specversion. Expected '1.0'" })
+  }),
+  id: z.string().min(1, "CloudEvent envelope missing required field: 'id'"),
+  source: z.string().min(1, "CloudEvent envelope missing required field: 'source'"),
+  type: z.string().min(1, "CloudEvent envelope missing required field: 'type'"),
+  time: z.string().min(1, "CloudEvent envelope missing required field: 'time'"),
+  datacontenttype: z.literal("application/json", {
+    errorMap: () => ({ message: "Unsupported datacontenttype. Expected 'application/json'" })
+  }),
+  data: z.record(z.unknown(), {
+    message: "CloudEvent envelope missing required field: 'data'"
+  })
+});
+
 export function validateOrderInput(payload) {
   if (!payload || typeof payload !== "object") {
     throw new ValidationError("Order payload must be a non-null JSON object");
   }
 
-  const { customerId, items, currency } = payload;
-
-  if (!customerId || typeof customerId !== "string" || customerId.trim() === "") {
+  if (typeof payload.customerId === "string" && payload.customerId.trim() === "") {
     throw new ValidationError("Field 'customerId' is required and must be a non-empty string");
   }
 
-  if (!Array.isArray(items) || items.length === 0) {
-    throw new ValidationError("Field 'items' is required and must be a non-empty array");
-  }
-
-  if (items.length > 50) {
-    throw new ValidationError("Field 'items' exceeds maximum allowed limit of 50 items");
-  }
-
-  for (let i = 0; i < items.length; i++) {
-    const item = items[i];
-    if (!item.productId || typeof item.productId !== "string") {
-      throw new ValidationError(`Item at index ${i} is missing valid 'productId'`);
+  const result = OrderInputSchema.safeParse(payload);
+  if (!result.success) {
+    const issues = result.error.issues || result.error.errors || [];
+    const firstError = issues[0];
+    const path = firstError ? firstError.path : [];
+    if (path[0] === "items" && typeof path[1] === "number") {
+      throw new ValidationError(`Item at index ${path[1]} ${firstError.message}`);
     }
-    if (
-      typeof item.quantity !== "number" ||
-      !Number.isInteger(item.quantity) ||
-      item.quantity <= 0
-    ) {
-      throw new ValidationError(`Item at index ${i} must have integer 'quantity' >= 1`);
-    }
-    if (typeof item.unitPrice !== "number" || item.unitPrice < 0) {
-      throw new ValidationError(`Item at index ${i} must have numeric 'unitPrice' >= 0`);
-    }
-  }
-
-  if (!currency || typeof currency !== "string" || currency.length < 3) {
-    throw new ValidationError(
-      "Field 'currency' is required and must be a valid 3-letter currency code (e.g. LKR, USD)"
-    );
+    throw new ValidationError(firstError ? firstError.message : "Validation failed");
   }
 
   return true;

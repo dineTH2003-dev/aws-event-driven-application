@@ -30,6 +30,16 @@ export async function handler(event) {
 
   for (const record of records) {
     const messageId = record.messageId;
+    const correlationId =
+      record.messageAttributes?.correlationId?.stringValue ||
+      record.messageAttributes?.CorrelationId?.stringValue ||
+      `sqs-${messageId}`;
+    const traceId =
+      record.messageAttributes?.traceId?.stringValue ||
+      record.attributes?.AWSTraceHeader ||
+      process.env._X_AMZN_TRACE_ID;
+
+    logger.setContext({ correlationId, traceId, messageId });
 
     try {
       let cloudEvent;
@@ -40,17 +50,19 @@ export async function handler(event) {
           "Failed to parse SQS message body as JSON. Marking batch item failure.",
           null,
           {
-            messageId
+            messageId,
+            correlationId
           }
         );
         batchItemFailures.push({ itemIdentifier: messageId });
         continue;
       }
 
-      await fulfillmentService.processEvent(cloudEvent, messageId);
+      await fulfillmentService.processEvent(cloudEvent, messageId, { correlationId, traceId });
     } catch (error) {
       logger.error("Failed to process SQS record. Reporting item failure for retry.", error, {
-        messageId
+        messageId,
+        correlationId
       });
       batchItemFailures.push({ itemIdentifier: messageId });
     }

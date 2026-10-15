@@ -197,10 +197,24 @@ resource "aws_api_gateway_deployment" "orders_deployment" {
 }
 
 resource "aws_api_gateway_stage" "dev" {
-  deployment_id = aws_api_gateway_deployment.orders_deployment.id
-  rest_api_id   = aws_api_gateway_rest_api.orders_api.id
-  stage_name    = var.environment
-  tags          = local.common_tags
+  deployment_id        = aws_api_gateway_deployment.orders_deployment.id
+  rest_api_id          = aws_api_gateway_rest_api.orders_api.id
+  stage_name           = var.environment
+  xray_tracing_enabled = true
+  tags                 = local.common_tags
+}
+
+resource "aws_api_gateway_method_settings" "all" {
+  rest_api_id = aws_api_gateway_rest_api.orders_api.id
+  stage_name  = aws_api_gateway_stage.dev.stage_name
+  method_path = "*/*"
+
+  settings {
+    metrics_enabled        = true
+    logging_level          = "OFF"
+    throttling_rate_limit  = 100
+    throttling_burst_limit = 200
+  }
 }
 
 # Lambda Permissions for API Gateway
